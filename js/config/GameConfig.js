@@ -1,5 +1,4 @@
 // ===== 디버그 설정 (테스트용, 정식 빌드 전엔 false로 되돌릴 것) =====
-//const DEBUG_SKIP_TO_BOSS = 	false;   // true면 게임 시작 시 바로 스테이지4 보스전으로 진입
 const DEBUG_STAGE = 0;	// 각 스테이지 번호로 수정 시 해당 스테이지로 바로 진입
 
 // 설정값 저장
@@ -251,7 +250,7 @@ GameConfig.BOSS = {
       warningDuration: 1000,
       warningBlinkInterval: 100,
       laserDuration: 1800,
-      laserTickInterval: 500,
+      laserTickInterval: 300,
       warningColor: 0xff5555,
       laserColor: 0xffffff,
       laserCapTopFrame: 48,
@@ -262,4 +261,22 @@ GameConfig.BOSS = {
       laserOffsetY: 40
     }
   }
+};
+// ===== 무한 스테이지(보스 이후) 설정 =====
+GameConfig.INFINITE = {
+  baseSpawnInterval: GameConfig.SPAWN_INTERVAL.FAST, // 시작 생성 간격
+  minSpawnInterval: 400,          // 아무리 빨라져도 이 값 밑으로는 안 내려감
+  intervalDecreasePerSecond: 4,   // 1초 생존할 때마다 생성 간격이 이만큼(ms) 감소
+  sideSpawnChance: 0.35,          // 매 생성마다 좌우 진입형으로 나올 확률
+  sideSpawnYMax: GameConfig.HEIGHT / 3   // 좌우 진입은 화면 상단 1/3 영역에서만
+};
+
+// ===== 하트 회복 아이템 설정 =====
+GameConfig.HEART = {
+  minInterval: 12000,   // 최소 생성 간격 (ms)
+  maxInterval: 20000,   // 최대 생성 간격 (ms)
+  speed: 120,            // 낙하 속도
+  healAmount: 1,         // 회복량
+  fontSize: 35,            // 하트 이모지 크기
+  color: 0xff2222        // 하트 색상 (빨간색)
 };

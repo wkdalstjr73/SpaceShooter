@@ -36,21 +36,16 @@ class GameScene extends Phaser.Scene {
 			
 			// 배경 설정
 			const bgScale = GameConfig.WIDTH / 128;
-			
 			this.backgrounds = [];
-			
 			for (let i = 0; i < 3; i++) {
-			
 			    const bg = this.add.image(
 			        GameConfig.WIDTH / 2,
 			        i * 256 * bgScale + (256 * bgScale / 2),
 			        'BackGrounds',
 			        1
 			    );
-			
 			    bg.setScale(bgScale);
 			    bg.setDepth(-10);
-			
 			    this.backgrounds.push(bg);
 			}
 			
@@ -63,7 +58,11 @@ class GameScene extends Phaser.Scene {
 		    this.playerHP = GameConfig.PLAYER_MAX_HP;
 		    // 플레이어 공격력 저장
 		    this.playerAttackPower = GameConfig.PLAYER_ATTACK_POWER;
-		    this.isGameOver = false;   // 중복으로 게임오버 처리되는 것 방지용 플래그
+	    	this.isGameOver = false;   // 중복으로 게임오버 처리되는 것 방지용 플래그
+		    this.hasBeatenBoss = false;   // 보스를 이겼는지 여부 (사망 시 어느 화면으로 갈지 결정)
+		    this.isInfiniteStage = false; // 무한 스테이지 진행 중인지
+		    this.infinitePlayTime = 0;
+		    this.gameStartTime = this.time.now; // 생존시간 계산용 게임 시작 시각
 		    
 		    // 일시정지 상태
 			this.isPaused = false; // false: 진행중, true: 일시정지
@@ -104,6 +103,7 @@ class GameScene extends Phaser.Scene {
 		    this.joystickInputY = 0;
 		    this.joystickBase = null;		// 조이스틱 바깥 원 (그래픽)
 		    this.joystickKnob = null;		// 조이스틱 손잡이 (그래픽)
+		    
 
 		    // 더블 탭 판정을 위한 상태값
 		    this.lastTapTime = 0;
@@ -225,6 +225,10 @@ class GameScene extends Phaser.Scene {
 		    // 랜덤 표식 공격 시스템 (실제 시작은 스테이지4 진입 시점에 스테이지 시스템이 호출)
 		    this.markers = [];
 		
+		    // 하트 회복 아이템 그룹 (무한 스테이지 진입 시점부터 생성 시작)
+		    this.hearts = this.physics.add.group();
+		    this.physics.add.overlap(this.player, this.hearts, this.handlePlayerHeartPickup, null, this);
+		
 		    // 스테이지 시스템 시작 (첫 스테이지 안내 문구 표시 → 적 생성 시작)
 		    this.startStageSystem();
 		  }
@@ -236,22 +240,22 @@ class GameScene extends Phaser.Scene {
 		      return; // 게임오버 처리 중에는 나머지 로직 정지 (페이드아웃만 진행)
 		    }
 		    
-		    const backgroundSpeed = 0.2;
-
+		    if (this.isInfiniteStage) {
+			    this.infinitePlayTime += delta;
+			    this.updateHUD();
+			}
+		    
+		    const backgroundSpeed = 0.3;
 		    for (const bg of this.backgrounds) {
-		
 		        bg.y += backgroundSpeed;
-		
 		        // 배경이 화면 아래로 완전히 나가면
 		        // 가장 위로 이동
 		        if (bg.y - bg.displayHeight / 2 >= GameConfig.HEIGHT) {
-		
 		            const topBg = this.backgrounds.reduce(
 		                (top, current) => {
 		                    return current.y < top.y ? current : top;
 		                }
 		            );
-		
 		            bg.y = topBg.y - bg.displayHeight;
 		        }
 		    }
@@ -265,6 +269,7 @@ class GameScene extends Phaser.Scene {
 		    this.updateMarkers();				// 플레이어를 따라오는 표식 위치 조정
 		    this.updateBossMovement();			// 보스 이동 처리 (보스전이 아니면 내부에서 즉시 종료)
     		this.updateBossHpBar();				// 보스 체력바 위치/게이지 갱신
+    		this.cleanupHearts();				// 화면 밖으로 나간 하트 제거
 		  }
 		  
 		  // 일시정지 / 재개
@@ -466,14 +471,25 @@ class GameScene extends Phaser.Scene {
 		    const isBossStage = (this.currentStageIndex === 3);
 	
 		    if (stageEl) {	// 스테이지 및 웨이브 표시
-		      stageEl.textContent = isBossStage		// 삼항 연산자
-		        ? '4-BOSS'
-		        : (this.currentStageIndex + 1) + '-' + (this.currentWaveIndex + 1);
-		    }
+			    if (this.isInfiniteStage) {
+			        const playSeconds = Math.floor(this.infinitePlayTime / 1000);
+			        const minutes = Math.floor(playSeconds / 60);
+			        const seconds = playSeconds % 60;
+			
+			        stageEl.textContent =
+			            minutes + ':' + String(seconds).padStart(2, '0');
+			
+			    } else if (isBossStage) {
+			        stageEl.textContent = '4-BOSS';
+			    } else {
+			        stageEl.textContent =
+			            (this.currentStageIndex + 1) + '-' + (this.currentWaveIndex + 1);
+			    }
+			}
 	
 		    if (killsEl) {	// 킬 수 표시
-		      if (isBossStage) {
-		        // 보스전은 웨이브 목표치가 없으니 게임 전체 누적 처치수를 표시
+		      if (this.isInfiniteStage || isBossStage) {
+		        // 보스전/무한 스테이지는 웨이브 목표치가 없으니 게임 전체 누적 처치수를 표시
 		        killsEl.textContent = 'KILL ' + this.totalKillCount;
 		      } else {
 		        // 일반 스테이지는 "현재 웨이브에서 처치한 수 / 이 웨이브의 목표 처치수"
@@ -513,7 +529,7 @@ class GameScene extends Phaser.Scene {
 		    }
 		  }
 		
-		  handlePlayerDeath() {
+  		  handlePlayerDeath() {
 		    // scene의 남은 모든 타이머 정리 (적 생성, 발사, 표식 등이 페이드아웃 중에 계속 동작하지 않도록)
 		    this.time.removeAllEvents();
 		
@@ -526,10 +542,22 @@ class GameScene extends Phaser.Scene {
 		    );
 		    this.player.setVisible(false);		// 플레이어 숨김
 		
-		    // 화면이 서서히 어두워지며 페이드아웃된 후 게임오버 화면으로 전환
+		    const survivalSeconds =
+    			Math.floor(this.infinitePlayTime / 1000);
+		
+		    // 화면이 서서히 어두워지며 페이드아웃된 후 결과 화면으로 전환
 		    this.cameras.main.fadeOut(GameConfig.GAME_OVER_FADE_DURATION, 0, 0, 0);	// 검은 화면 전환
 		    this.cameras.main.once('camerafadeoutcomplete', () => {		// 페이드 아웃이 끝나면
-		      this.scene.start('GameOverScene');						// GameOverScene으로 이동
+		      if (this.hasBeatenBoss) {
+		        // 보스를 이긴 뒤(무한 스테이지 도중) 사망 → 결과와 함께 클리어 화면
+		        this.scene.start('ClearScene', {
+		          kills: this.totalKillCount,
+		          time: survivalSeconds
+		        });
+		      } else {
+		        // 보스를 못 이기고 사망 → 기존처럼 게임오버 화면
+		        this.scene.start('GameOverScene');
+		      }
 		    });
 		  }
 		  
@@ -563,7 +591,7 @@ class GameScene extends Phaser.Scene {
 		      return;
 		    }
 		    */
-		    if (typeof DEBUG_STAGE !== 'undefined' && DEBUG_STAGE >= 1 && DEBUG_STAGE <= 4) {
+		    if (typeof DEBUG_STAGE !== 'undefined' && DEBUG_STAGE >= 1 && DEBUG_STAGE <= 5) {
 			    // 디버그로 시작할 스테이지 설정
 			    // DEBUG_STAGE는 1~4
 			    // currentStageIndex는 0~3
@@ -580,7 +608,10 @@ class GameScene extends Phaser.Scene {
 			            });
 			        });
 			        return;
-			    }
+			    } else if(DEBUG_STAGE === 5) {
+					this.startInfiniteTransition();
+					return;
+				}
 			    // 1~3스테이지는 해당 스테이지의 1웨이브 설정을 가져옴
 			    const waveConfig =
 			        GameConfig.STAGE_WAVES[
@@ -861,9 +892,9 @@ class GameScene extends Phaser.Scene {
 		    });
 		  }
 		
-		  handleBossDefeated() {
-		    this.isGameOver = true; // 메인 update 루프 정지 (게임오버 때와 동일한 정지 메커니즘 재사용)
-		
+  		  handleBossDefeated() {
+		    // 주의: isGameOver는 여기서 true로 만들지 않음 — 보스를 잡아도 게임은 계속 진행(무한 스테이지)되어야 하기 때문
+
 		    if (this.bossPatternEvent) {
 		      this.bossPatternEvent.remove(false);
 		    }
@@ -886,10 +917,187 @@ class GameScene extends Phaser.Scene {
 		    this.destroyEnemy(this.boss); // 레이저/경고선 관련 타이머·그래픽까지 기존 함수로 한 번에 정리
 		    this.boss = null;
 		
-		    this.cameras.main.fadeOut(GameConfig.GAME_OVER_FADE_DURATION, 0, 0, 0);
-		    this.cameras.main.once('camerafadeoutcomplete', () => {
-		      this.scene.start('ClearScene');
+		    this.startInfiniteTransition(); // 클리어 화면 대신 무한 스테이지 진입 연출로 이동
+		  }
+		  
+  		  // ===== 무한 스테이지 (보스 이후) =====
+		  startInfiniteTransition() {
+		    const centerX = GameConfig.WIDTH / 2;
+		    const centerY = GameConfig.HEIGHT / 2;
+
+		    const text = this.add.text(centerX, centerY, 'BOSS CLEAR!\nENDLESS MODE START', {
+		      fontSize: '34px',
+		      fontStyle: 'bold',
+		      color: '#ffe066',
+		      align: 'center',
+		      stroke: '#000000',
+		      strokeThickness: 6
+		    }).setOrigin(0.5).setAlpha(0).setDepth(1000);
+
+		    this.tweens.add({
+		      targets: text,
+		      alpha: 1,
+		      duration: GameConfig.TEXT_FADE_IN,
+		      onComplete: () => {
+		        this.time.delayedCall(GameConfig.TEXT_HOLD, () => {
+		          this.tweens.add({
+		            targets: text,
+		            alpha: 0,
+		            duration: GameConfig.TEXT_FADE_OUT,
+		            onComplete: () => {
+		              text.destroy();
+		              this.startInfiniteStage();
+		            }
+		          });
+		        });
+		      }
 		    });
+		  }
+
+		  startInfiniteStage() {
+		    this.hasBeatenBoss = true;
+		    this.isInfiniteStage = true;
+		    this.infiniteStartTime = this.time.now;
+		    this.infinitePlayTime = 0;
+
+		    this.activeEnemyTypes = [
+		      GameConfig.ENEMY_TYPES.TYPE1,
+		      GameConfig.ENEMY_TYPES.TYPE2,
+		      GameConfig.ENEMY_TYPES.TYPE3,
+		      GameConfig.ENEMY_TYPES.TYPE4
+		    ];
+		    this.spawningEnabled = true;
+		    this.updateHUD();
+
+		    this.scheduleNextInfiniteSpawn();
+		    this.scheduleNextHeart();
+		  }
+
+		  scheduleNextInfiniteSpawn() {
+		    // 생존 시간이 길어질수록 생성 간격이 점점 짧아짐 (최소값 밑으로는 안 내려감)
+		    const elapsedSeconds = (this.time.now - this.infiniteStartTime) / 1000;
+		    const interval = Math.max(
+		      GameConfig.INFINITE.minSpawnInterval,
+		      GameConfig.INFINITE.baseSpawnInterval - elapsedSeconds * GameConfig.INFINITE.intervalDecreasePerSecond
+		    );
+
+		    this.time.delayedCall(interval, () => {
+		      if (!this.spawningEnabled || this.isGameOver) {
+		        return;
+		      }
+
+		      const type = Phaser.Utils.Array.GetRandom(this.activeEnemyTypes);
+
+		      if (Math.random() < GameConfig.INFINITE.sideSpawnChance) {
+		        this.spawnSideEnemy(type);
+		      } else {
+		        this.spawnEnemy(type);
+		      }
+
+		      this.scheduleNextInfiniteSpawn();
+		    });
+		  }
+
+		  // 화면 좌우 가장자리(상단 1/3 영역)에서 대각선으로 진입하는 적 생성
+		  spawnSideEnemy(type) {
+		    const halfSize = type.size / 2;
+		    const fromLeft = Math.random() < 0.5;
+		    const spawnX = fromLeft ? -halfSize : GameConfig.WIDTH + halfSize;
+		    const spawnY = Phaser.Math.Between(halfSize, GameConfig.INFINITE.sideSpawnYMax);
+
+		    const enemy = this.physics.add.sprite(spawnX, spawnY, 'ships', type.enemyFrame);
+		    enemy.setDisplaySize(type.size, type.size);
+
+		    this.enemies.add(enemy); // 그룹 추가를 먼저 (속도 초기화 방지)
+
+		    const directionX = fromLeft ? 1 : -1;
+		    enemy.body.setVelocity(directionX * type.speed, type.speed); // 대각선(가로+세로) 방향
+
+		    enemy.hp = type.hp;
+		    enemy.maxHp = type.hp;
+		    enemy.attackPower = type.attackPower;
+		    enemy.effectColor = type.color;
+		    enemy.isVisible = false;
+		    enemy.spawnSide = fromLeft ? 'left' : 'right'; // 화면 진입 판정 방식을 구분하기 위한 표시
+
+		    if (type.laserDuration) {
+		      enemy.fireEvent = this.time.addEvent({
+		        delay: type.fireRate,
+		        callback: () => this.startLaserCycle(enemy, type),
+		        loop: true
+		      });
+		    } else {
+		      enemy.fireEvent = this.time.addEvent({
+		        delay: type.fireRate,
+		        callback: () => this.fireEnemyBullet(enemy, type),
+		        loop: true
+		      });
+		    }
+		  }
+
+		  // ===== 하트 회복 아이템 =====
+
+		  scheduleNextHeart() {
+		    const delay = Phaser.Math.Between(GameConfig.HEART.minInterval, GameConfig.HEART.maxInterval);
+
+		    this.time.delayedCall(delay, () => {
+		      if (!this.isGameOver && this.isInfiniteStage) {
+		        this.spawnHeart();
+		        this.scheduleNextHeart();
+		      }
+		    });
+		  }
+
+  		  spawnHeart() {
+		    const spawnX = Phaser.Math.Between(40, GameConfig.WIDTH - 40);
+		
+		    const heart = this.createHeartShape(spawnX, -20);
+		
+		    this.physics.add.existing(heart);
+		    this.hearts.add(heart); // 그룹 추가를 먼저
+		
+		    heart.body.setVelocityY(GameConfig.HEART.speed);
+		  }
+		
+		  // 하트 모양을 그래픽으로 직접 그려서 컨테이너로 반환 (색상을 확실하게 지정하기 위해 이모지 대신 도형 사용)
+		  createHeartShape(x, y) {
+		    const size = GameConfig.HEART.fontSize;
+		    const color = GameConfig.HEART.color;
+		
+		    const graphics = this.add.graphics();
+		    graphics.fillStyle(color, 1);
+		
+		    const s = size / 2;
+		    // 원 두 개(하트 윗부분) + 삼각형(하트 아랫부분)을 조합해서 하트 모양 생성
+		    graphics.fillCircle(-s * 0.5, -s * 0.3, s * 0.5);
+		    graphics.fillCircle(s * 0.5, -s * 0.3, s * 0.5);
+		    graphics.fillTriangle(
+		      -s, -s * 0.15,
+		      s, -s * 0.15,
+		      0, s
+		    );
+		
+		    const container = this.add.container(x, y, [graphics]);
+		    container.setSize(size, size); // 물리 body 크기 계산을 위해 컨테이너 크기 지정
+
+		    return container;
+		  }
+
+		  cleanupHearts() {
+		    this.hearts.getChildren().forEach((heart) => {
+		      if (heart.y > GameConfig.HEIGHT + 30) {
+		        heart.destroy();
+		      }
+		    });
+		  }
+
+		  handlePlayerHeartPickup(player, heart) {
+		    heart.destroy();
+
+		    this.playerHP = Math.min(GameConfig.PLAYER_MAX_HP, this.playerHP + GameConfig.HEART.healAmount);
+		    this.updateHUD();
+
+		    this.spawnBurstEffect(player.x, player.y, 0x66ff99, 14, 200);
 		  }
 		
 		  // 적 생성 예약
@@ -907,9 +1115,13 @@ class GameScene extends Phaser.Scene {
 	  	  // 적을 실제로 처치했을 때만 호출 (화면 밖으로 도망친 경우는 호출하지 않음)
 		  registerEnemyKill() {
 		    this.totalKillCount++;		// 전체 킬 수 증가
-	
+		    
+		    const isInfiniteStage = (this.isInfiniteStage === true);
 		    const isBossStage = (this.currentStageIndex === 3);
-		    if (isBossStage) {
+		    if(isInfiniteStage) {
+				this.updateHUD();
+				return;
+			} else if (isBossStage) {
 		      this.updateHUD();			// HUD 갱신 (보스전은 누적 처치수만 표시하므로 여기서 갱신해도 충분)
 		      return; // 스테이지4(보스전)는 웨이브 목표치가 없음
 		    }
@@ -1502,15 +1714,28 @@ class GameScene extends Phaser.Scene {
 		  }
 		
 		  // 매 프레임 모든 적 업데이트
-		  updateEnemies() {
+  		  updateEnemies() {
 		    this.enemies.getChildren().forEach((enemy) => {
-		      // 화면 안으로 완전히 들어왔는지 판정 (적의 위쪽 끝 기준)
-		      if (!enemy.isVisible && enemy.y - enemy.height / 2 >= 0) {
-		        enemy.isVisible = true;		// 화면 안으로 들어왔다면 피격 가능 상태로 전환
+		      // 화면 안으로 완전히 들어왔는지 판정 (진입 방향에 따라 기준이 다름)
+		      if (!enemy.isVisible) {
+		        if (enemy.spawnSide === 'left') {
+		          if (enemy.x - enemy.displayWidth / 2 >= 0) {
+		            enemy.isVisible = true;
+		          }
+		        } else if (enemy.spawnSide === 'right') {
+		          if (enemy.x + enemy.displayWidth / 2 <= GameConfig.WIDTH) {
+		            enemy.isVisible = true;
+		          }
+		        } else {
+		          // 기존 상단 진입 (displayHeight 기준 — 이미지로 바뀐 뒤에도 정확한 시각적 크기를 쓰도록 수정)
+		          if (enemy.y - enemy.displayHeight / 2 >= 0) {
+		            enemy.isVisible = true;
+		          }
+		        }
 		      }
 		
-		      // 화면 아래로 완전히 벗어나면 제거
-		      if (enemy.y > GameConfig.HEIGHT + 50) {
+		      // 화면 밖(아래/좌/우)으로 완전히 벗어나면 제거
+		      if (enemy.y > GameConfig.HEIGHT + 50 || enemy.x < -100 || enemy.x > GameConfig.WIDTH + 100) {
 		        this.destroyEnemy(enemy);
 		      }
 		    });
