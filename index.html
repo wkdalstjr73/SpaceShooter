@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>탄막 슈팅 게임</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.80.1/dist/phaser.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #1a1a1a;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #game-wrapper {
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+    }
+
+    #hud-bar {
+      display: none; /* GameScene 진입 시에만 flex로 표시됨 */
+      justify-content: space-between;
+      align-items: center;
+      background: #111111;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      box-sizing: border-box;
+      flex-shrink: 0; /* 캔버스 크기 계산과 무관하게 HUD 바 높이는 항상 유지 */
+      /* padding, font-size는 JS(resizeGame)에서 스케일에 맞춰 동적으로 설정함 */
+    }
+
+    #hud-hp {
+      color: #ff5555;
+      font-weight: bold;
+    }
+
+    #hud-stage {
+      color: #ffffff;
+      font-weight: bold;
+    }
+
+    #hud-kills {
+      color: #ffd54f;
+      font-weight: bold;
+    }
+
+    #game-container {
+      line-height: 0; /* 캔버스 밑에 생기는 미세한 여백 제거 */
+    }
+    
+    #container canvas {
+      image-rendering: pixelated;      /* 크롬, 엣지 등 */
+      image-rendering: crisp-edges;    /* 파이어폭스 등 구형 브라우저 대응 */
+    }
+  </style>
+</head>
+<body>
+  <div id="game-wrapper">
+    <div id="hud-bar">
+      <div id="hud-hp">HP: 10 / 10</div>
+      <div id="hud-stage">1-1</div>
+      <div id="hud-kills">처치: 0</div>
+    </div>
+    <div id="container"></div>
+  </div>
+
+  <!-- 설정값 -->
+  <script src="js/config/GameConfig.js"></script>
+
+  <!-- Scene 파일들 (순서 중요: main.js보다 먼저) -->
+  <script src="js/scenes/BootScene.js"></script>
+  <script src="js/scenes/StartScene.js"></script>
+  <script src="js/scenes/GameScene.js"></script>
+  <script src="js/scenes/GameOverScene.js"></script>
+  <script src="js/scenes/ClearScene.js"></script>
+
+  <!-- 게임 실행 (항상 마지막) -->
+  <script src="js/main.js"></script>
+</body>
+</html>
