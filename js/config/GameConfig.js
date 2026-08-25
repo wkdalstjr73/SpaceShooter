@@ -1,5 +1,5 @@
 // ===== 디버그 설정 (테스트용, 정식 빌드 전엔 false로 되돌릴 것) =====
-const DEBUG_STAGE = 0;	// 각 스테이지 번호로 수정 시 해당 스테이지로 바로 진입
+const DEBUG_STAGE = 5;	// 각 스테이지 번호로 수정 시 해당 스테이지로 바로 진입
 
 // 설정값 저장
 const GameConfig = {
