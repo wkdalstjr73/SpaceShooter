@@ -15,6 +15,16 @@ class ClearScene extends Phaser.Scene {
     if (window.resizeGame) window.resizeGame();
 
     const centerX = GameConfig.WIDTH / 2;
+    
+    const background = this.add.image(
+	  GameConfig.WIDTH / 2,
+	  GameConfig.HEIGHT / 2,
+	  'BackGrounds',
+	  0
+	);
+	
+	background.setDisplaySize(GameConfig.WIDTH, GameConfig.HEIGHT);
+	background.setDepth(-10);
 
     // 클리어 문구
     this.add.text(centerX, 220, 'GAME CLEAR', {

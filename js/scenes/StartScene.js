@@ -14,6 +14,16 @@ class StartScene extends Phaser.Scene {
 			if (window.resizeGame) window.resizeGame();
 		    // 시작 화면 UI 구현
 		    const centerX = GameConfig.WIDTH / 2;
+		    
+		    const background = this.add.image(
+			  GameConfig.WIDTH / 2,
+			  GameConfig.HEIGHT / 2,
+			  'BackGrounds',
+			  0
+			);
+			
+			background.setDisplaySize(GameConfig.WIDTH, GameConfig.HEIGHT);
+			background.setDepth(-10);
 		
 		    // 게임 제목
 		    this.add.text(centerX, 200, '탄막 슈팅', {

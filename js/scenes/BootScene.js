@@ -5,7 +5,11 @@ class BootScene extends Phaser.Scene {
 		  }
 	
 		  preload() {
-		    // 추후 공통 리소스(로딩 화면 이미지 등)를 여기서 로드
+		    // 시작·게임오버·클리어 화면에서 공통으로 사용할 배경
+		    this.load.spritesheet('BackGrounds', 'assets/images/BackGrounds.png', {
+		      frameWidth: 128,
+		      frameHeight: 256
+		    });
 		  }
 	
 		  create() {

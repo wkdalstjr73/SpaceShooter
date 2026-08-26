@@ -9,21 +9,10 @@ const GameConfig = {
 
   PLAYER_SPEED: 300,          // 플레이어 초당 이동 속도 (px/sec)
   TOUCH_MOVE_SCALE: 1.0,      // 터치 이동 배율: 1.0 = 손가락 이동량 그대로
-  //TOUCH_DEAD_ZONE: 4,         // 터치 목표 지점과 이 거리(px) 이내면 정지 (떨림 방지)
   PLAYER_FIRE_RATE: 250,     // 플레이어 발사 간격 (ms) - 0.25초마다 발사
   PLAYER_BULLET_SPEED: 500,   // 플레이어 발사체 속도 (px/sec)
-  PLAYER_BULLET_SIZE: 8,      // 발사체 크기 (지름/한변)
   PLAYER_MAX_HP: 5,          // 플레이어 체력
   PLAYER_ATTACK_POWER: 2,      // 플레이어 공격력
-  
-  /*
-  JOYSTICK_RADIUS: 50,          // 조이스틱 베이스(바깥 원)의 반지름
-  JOYSTICK_DEAD_ZONE: 25,        // 이 거리 이내로만 움직이면 무시 (미세 떨림 방지)
-  JOYSTICK_BASE_COLOR: 0xffffff,
-  JOYSTICK_BASE_ALPHA: 0.25,
-  JOYSTICK_KNOB_COLOR: 0x708090,
-  JOYSTICK_KNOB_ALPHA: 0.6,
-  */
   
   DOUBLE_TAP_WINDOW: 300,       // 이 시간(ms) 이내에 다시 터치하면 더블 탭으로 인식 → 일시정지/재개
   
@@ -191,7 +180,6 @@ GameConfig.STAGE4_CONFIG = {
 // ===== 보스(스테이지4) 설정 =====
 GameConfig.BOSS = {
   size: 80,
-  color: 0x4a148c,          // 보라색 계열 (임시, 나중에 이미지로 교체 가능)
   hp: 80,
   phase2Threshold: 40,
 

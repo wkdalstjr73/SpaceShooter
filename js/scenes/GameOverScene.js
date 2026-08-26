@@ -9,6 +9,16 @@ class GameOverScene extends Phaser.Scene {
 			document.getElementById('hud-bar').style.display = 'none';
 			if (window.resizeGame) window.resizeGame();
 		    const centerX = GameConfig.WIDTH / 2;
+		    
+		    const background = this.add.image(
+			  GameConfig.WIDTH / 2,
+			  GameConfig.HEIGHT / 2,
+			  'BackGrounds',
+			  0
+			);
+			
+			background.setDisplaySize(GameConfig.WIDTH, GameConfig.HEIGHT);
+			background.setDepth(-10);
 		
 		    // 게임 오버 문구
 		    this.add.text(centerX, 380, 'GAME OVER', {
