@@ -73,11 +73,23 @@ class GameScene extends Phaser.Scene {
 		    this.hasBeatenBoss = false;   // 보스를 이겼는지 여부 (사망 시 어느 화면으로 갈지 결정)
 		    this.isInfiniteStage = false; // 무한 스테이지 진행 중인지
 		    this.infinitePlayTime = 0;
+		    this.gameStartTime = this.time.now; // 생존시간 계산용 게임 시작 시각
 		    
 		    // 일시정지 상태
 			this.isPaused = false; // false: 진행중, true: 일시정지
 			this.pauseText = null; // 일시정지 텍스트값
 		
+		    // 플레이어 생성 (임시로 사각형 사용, 추후 이미지로 교체 예정)
+		    // 플레이어 생성 (임시로 사각형 사용, 추후 이미지로 교체 예정)
+		    /*
+    		this.player = this.add.rectangle(
+				centerX,						// x - 플레이어 생성위치 x
+				GameConfig.HEIGHT - 150,		// y - 플레이어 생성위치 y
+				GameConfig.PLAYER_SIZE,			// width - 플레이어 너비
+				GameConfig.PLAYER_SIZE,			// height - 플레이어 높이
+				0x4a90d9						// color - 플레이어 색상
+			);
+			*/
 			this.playerTargetY = GameConfig.HEIGHT - 150;
 			
 			// 화면 아래쪽 바깥에서 시작
@@ -90,7 +102,13 @@ class GameScene extends Phaser.Scene {
 			
 			this.player = this.player.setScale(5);
 			this.isPlayerEntering = true;
-		    this.player.body.setCollideWorldBounds(false);
+			//this.player = this.physics.add.sprite(centerX, GameConfig.HEIGHT - 150, 'ships', 11);
+			//this.player = this.player.setScale(5);
+			//this.player.setDisplaySize(GameConfig.PLAYER_SIZE, GameConfig.PLAYER_SIZE); // 필요시 원하는 히트박스 크기로 조정
+		
+		    // 물리엔진 적용 (충돌, 속도 제어를 위해 필요)
+		    // this.physics.add.existing(this.player);
+		    this.player.body.setCollideWorldBounds(false); // 화면 밖으로 못 나가게
 		
 		    // 키보드 방향키 입력 등록
 		    this.cursors = this.input.keyboard.createCursorKeys();
@@ -99,6 +117,103 @@ class GameScene extends Phaser.Scene {
 			this.input.keyboard.on('keydown-SPACE', () => {
 			  this.togglePause();
 			});
+		    
+		    /*
+		    // 가상 조이스틱을 위한 상태값
+		    this.isTouchActive = false;
+		    this.joystickOriginX = 0;		// 터치를 시작한 지점 (조이스틱 중심)
+		    this.joystickOriginY = 0;
+		    this.joystickInputX = 0;		// -1 ~ 1 사이, 현재 조이스틱이 기울어진 방향/정도
+		    this.joystickInputY = 0;
+		    this.joystickBase = null;		// 조이스틱 바깥 원 (그래픽)
+		    this.joystickKnob = null;		// 조이스틱 손잡이 (그래픽)
+		    
+
+		    // 더블 탭 판정을 위한 상태값
+		    this.lastTapTime = 0;
+		
+			// 터치 시작: 더블 탭이면 일시정지 토글, 아니면 그 지점에 조이스틱 생성
+		    this.input.on('pointerdown', (pointer) => {
+		      if (this.isGameOver) {
+		        return;
+		      }
+
+		      const now = this.time.now;
+		      const isDoubleTap = (now - this.lastTapTime) < GameConfig.DOUBLE_TAP_WINDOW;
+		      this.lastTapTime = isDoubleTap ? 0 : now; // 더블 탭 처리 후엔 초기화해서 트리플 탭이 다시 더블 탭으로 이어지지 않게 함
+
+		      if (isDoubleTap) {
+		        this.togglePause();
+		        this.cancelJoystick(); // 첫 번째 탭으로 이미 생성된 조이스틱이 있으면 정리
+		        return; // 더블 탭 시에는 조이스틱을 새로 만들지 않음
+		      }
+
+		      if (this.isPaused) {
+		        return; // 일시정지 중엔 첫 탭만으로 조이스틱을 만들지 않음 (재개는 더블 탭으로만)
+		      }
+
+		      this.isTouchActive = true;
+		      this.joystickOriginX = pointer.x;
+		      this.joystickOriginY = pointer.y;
+		      this.joystickInputX = 0;
+		      this.joystickInputY = 0;
+		
+		      this.joystickBase = this.add.circle(
+		        pointer.x, pointer.y,
+		        GameConfig.JOYSTICK_RADIUS,
+		        GameConfig.JOYSTICK_BASE_COLOR,
+		        GameConfig.JOYSTICK_BASE_ALPHA
+		      ).setDepth(1500);
+		
+		      this.joystickKnob = this.add.circle(
+		        pointer.x, pointer.y,
+		        GameConfig.JOYSTICK_RADIUS * 0.45,
+		        GameConfig.JOYSTICK_KNOB_COLOR,
+		        GameConfig.JOYSTICK_KNOB_ALPHA
+		      ).setDepth(1501);
+		    });
+		
+			// 터치 이동: 조이스틱 중심 기준으로 손잡이 위치와 입력 방향/세기 갱신
+		    this.input.on('pointermove', (pointer) => {
+		      if (!this.isTouchActive) {
+		        return;
+		      }
+		
+		      const dx = pointer.x - this.joystickOriginX;
+		      const dy = pointer.y - this.joystickOriginY;
+		      const distance = Math.sqrt(dx * dx + dy * dy);
+		      const radius = GameConfig.JOYSTICK_RADIUS;
+		
+		      if (distance < GameConfig.JOYSTICK_DEAD_ZONE) {
+		        // 거의 안 움직였으면 입력 없음으로 처리
+		        this.joystickInputX = 0;
+		        this.joystickInputY = 0;
+		        this.joystickKnob.x = this.joystickOriginX;
+		        this.joystickKnob.y = this.joystickOriginY;
+		        return;
+		      }
+		
+		      // 베이스 반경을 넘어가지 못하도록 손잡이 위치를 제한 (clamp)
+		      const clampedDistance = Math.min(distance, radius);
+		      const angle = Math.atan2(dy, dx);
+		
+		      const knobX = this.joystickOriginX + Math.cos(angle) * clampedDistance;
+		      const knobY = this.joystickOriginY + Math.sin(angle) * clampedDistance;
+
+		      this.joystickKnob.x = knobX;
+		      this.joystickKnob.y = knobY;
+
+		      // 입력 세기(0~1)를 방향 벡터에 반영 — 조금 밀면 천천히, 끝까지 밀면 최고 속도
+		      const strength = (clampedDistance / radius) * 0.8;
+		      this.joystickInputX = Math.cos(angle) * strength;
+		      this.joystickInputY = Math.sin(angle) * strength;
+		    });
+		
+			// 터치 종료: 조이스틱 제거
+		    this.input.on('pointerup', () => {
+		      this.cancelJoystick();
+		    });
+		    */
 		    
 		    // 상대 이동형 터치 상태값
 			this.isTouchActive = false;
@@ -316,6 +431,10 @@ class GameScene extends Phaser.Scene {
 			if (this.isGameOver || this.isPlayerEntering) {
 			  return;
 			}
+		    if (this.isGameOver) {				// 게임오버 상태에서는 일시정지 필요없음
+		      return;
+		    }
+		
 		    if (this.isPaused) {				// 이미 일시정지 상태라면 게임 재개
 		      // 게임 재개
 		      this.isPaused = false;		
@@ -378,6 +497,8 @@ class GameScene extends Phaser.Scene {
 		          fontSize: '16px',				// 폰트 크기
 		          fontStyle: 'bold',			// 폰트 굵기
 		          color: '#ffffff',				// 폰트 색상
+		          //stroke: '#ffffff',			// 외곽선 색상
+		          //strokeThickness: 1			// 외곽선 굵기
 		        }
 			  )
 			  .setOrigin(0.5)
@@ -428,6 +549,43 @@ class GameScene extends Phaser.Scene {
 			);
 		  }
 		
+	      // 플레이어 이동
+	      /*
+	      // 가상 조이스틱 입력을 실제 이동 속도로 변환
+		  handleTouchMovement() {
+		    const speed = GameConfig.PLAYER_SPEED;
+
+		    this.player.body.setVelocity(
+		      this.joystickInputX * speed,
+		      this.joystickInputY * speed
+		    );
+
+		    // 조이스틱 x축 기울기에 따라 함선 포즈 전환 (작은 값은 정면 유지)
+		    if (this.joystickInputX < -0.15) {
+		      this.player.setFrame(10);
+		    } else if (this.joystickInputX > 0.15) {
+		      this.player.setFrame(12);
+		    } else {
+		      this.player.setFrame(11);
+		    }
+		  }
+
+		  // 조이스틱 상태와 그래픽을 정리 (터치 종료, 더블 탭 감지 시 등 여러 곳에서 재사용)
+		  cancelJoystick() {
+		    this.isTouchActive = false;
+		    this.joystickInputX = 0;
+		    this.joystickInputY = 0;
+
+		    if (this.joystickBase) {
+		      this.joystickBase.destroy();
+		      this.joystickBase = null;
+		    }
+		    if (this.joystickKnob) {
+		      this.joystickKnob.destroy();
+		      this.joystickKnob = null;
+		    }
+		  }
+		  */
 		  // 상대 이동형 터치는 pointermove에서 이미 위치를 직접 갱신한다.
 		  handleTouchMovement() {
 		    this.player.body.setVelocity(0, 0);
@@ -446,11 +604,21 @@ class GameScene extends Phaser.Scene {
 		  
 		  
 		  
-		  firePlayerBullet() {
+		   // 플레이어 자동 공격
+		   firePlayerBullet() {
 			if (this.isPlayerEntering) {
 			  return;
 			}
-		    const bullet = this.add.sprite(
+		    // 플레이어 위치에서 발사체 생성 (임시로 원 도형 사용)
+		    /*
+		    const bullet = this.add.circle(				// 플레이어 위치에 노란색 원을 생성
+		      this.player.x,
+		      this.player.y,
+		      GameConfig.PLAYER_BULLET_SIZE,
+		      0xffff00
+		    );
+		    */
+		    const bullet = this.add.sprite(				// 플레이어 위치에 노란색 원을 생성
 		      this.player.x,
 		      this.player.y,
 		      'Projectiles',
@@ -598,6 +766,20 @@ class GameScene extends Phaser.Scene {
 		    this.spawningEnabled = false;		// 현재 적 생성 비활성화
 		    this.isWaveTransitioning = false;	// 웨이브 전환 중인지 저장
 	
+			/*
+		    // 디버그: 보스전 바로 시작
+		    if (typeof DEBUG_SKIP_TO_BOSS !== 'undefined' && DEBUG_SKIP_TO_BOSS) {
+		      this.currentStageIndex = 3; // 스테이지4
+		      this.updateHUD();
+	
+		      this.showStageAnnouncement(4, () => {
+		        this.time.delayedCall(GameConfig.SPAWN_DELAY_AFTER_TEXT, () => {
+		          this.startBossFight();
+		        });
+		      });
+		      return;
+		    }
+		    */
 		    if (typeof DEBUG_STAGE !== 'undefined' && DEBUG_STAGE >= 1 && DEBUG_STAGE <= 5) {
 			    // 디버그로 시작할 스테이지 설정
 			    // DEBUG_STAGE는 1~4
@@ -673,6 +855,8 @@ class GameScene extends Phaser.Scene {
 		    const halfSize = GameConfig.BOSS.size / 2;
 		    const startY = -halfSize;
 		
+		    //const boss = this.add.rectangle(startX, startY, GameConfig.BOSS.size, GameConfig.BOSS.size, GameConfig.BOSS.color);
+		    //this.physics.add.existing(boss);
 		    const boss = this.physics.add.sprite(startX, startY, 'shipsBig', 23); // 원하는 보스 프레임 번호로 교체
 		    boss.setDisplaySize(GameConfig.BOSS.size, GameConfig.BOSS.size);
 		
@@ -1617,16 +1801,20 @@ class GameScene extends Phaser.Scene {
 		
 		  // 레이저 히트
 		  // 레이저와 플레이어가 겹치는 좌표 계산 
-		  checkLaserHitPlayer(enemy, type) {
+  		  checkLaserHitPlayer(enemy, type) {
 		    if (!enemy.active || !enemy.laserActive) {
 		      return;
 		    }
 		
+		    // 시각적 시작점과 동일한 오프셋을 적용해야 판정과 화면이 일치함
+		    const originX = enemy.x + (enemy.laserOffsetX || 0);
+		    const originY = enemy.y + (enemy.laserOffsetY || 0);
+		
 		    const halfWidth = enemy.laserWidth / 2 + 20; 	// 20은 플레이어 크기 절반 보정
 		    const withinX =									// 플레이어와 레이저 중심의 x차이가 레이저 폭 안인지 확인
-		    	Math.abs(this.player.x - enemy.x)
+		    	Math.abs(this.player.x - originX)
 		    	<= halfWidth;
-		    const withinY = this.player.y >= enemy.y;    	// 플레이어가 레이저 아래쪽에 있는지 확인
+		    const withinY = this.player.y >= originY;    	// 플레이어가 레이저 아래쪽(시각적 시작점 기준)에 있는지 확인
 		
 		    if (withinX && withinY) {						// 위 두 조건이 모두 맞으면 데미지
 		      this.damagePlayer(type.attackPower);
