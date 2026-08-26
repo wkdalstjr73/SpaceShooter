@@ -95,6 +95,7 @@ class GameScene extends Phaser.Scene {
 			  this.togglePause();
 			});
 		    
+		    /*
 		    // 가상 조이스틱을 위한 상태값
 		    this.isTouchActive = false;
 		    this.joystickOriginX = 0;		// 터치를 시작한 지점 (조이스틱 중심)
@@ -180,7 +181,7 @@ class GameScene extends Phaser.Scene {
 		      this.joystickKnob.y = knobY;
 
 		      // 입력 세기(0~1)를 방향 벡터에 반영 — 조금 밀면 천천히, 끝까지 밀면 최고 속도
-		      const strength = clampedDistance / radius;
+		      const strength = (clampedDistance / radius) * 0.8;
 		      this.joystickInputX = Math.cos(angle) * strength;
 		      this.joystickInputY = Math.sin(angle) * strength;
 		    });
@@ -189,6 +190,107 @@ class GameScene extends Phaser.Scene {
 		    this.input.on('pointerup', () => {
 		      this.cancelJoystick();
 		    });
+		    */
+		    
+		    // 상대 이동형 터치 상태값
+			this.isTouchActive = false;
+			this.touchPointerId = null;
+			this.touchLastX = 0;
+			this.touchLastY = 0;
+			
+			// 더블 탭 판정을 위한 상태값
+			this.lastTapTime = 0;
+			
+			// 터치 시작: 더블 탭이면 일시정지 토글, 아니면 현재 손가락 위치 저장
+			this.input.on('pointerdown', (pointer) => {
+			  if (this.isGameOver) {
+			    return;
+			  }
+			
+			  const now = this.time.now;
+			  const isDoubleTap =
+			    (now - this.lastTapTime) < GameConfig.DOUBLE_TAP_WINDOW;
+			
+			  this.lastTapTime = isDoubleTap ? 0 : now;
+			
+			  if (isDoubleTap) {
+			    this.togglePause();
+			    this.cancelTouchControl();
+			    return;
+			  }
+			
+			  if (this.isPaused || this.isTouchActive) {
+			    return;
+			  }
+			
+			  this.isTouchActive = true;
+			  this.touchPointerId = pointer.id;
+			  this.touchLastX = pointer.x;
+			  this.touchLastY = pointer.y;
+			
+			  // 키보드로 이동 중이었다면 터치 시작 시 즉시 멈춤
+			  this.player.body.setVelocity(0, 0);
+			  this.player.setFrame(11);
+			});
+			
+			// 터치 이동: 손가락이 직전 이벤트에서 움직인 거리만큼 플레이어 이동
+			this.input.on('pointermove', (pointer) => {
+			  if (
+			    !this.isTouchActive ||
+			    pointer.id !== this.touchPointerId ||
+			    this.isPaused ||
+			    this.isGameOver
+			  ) {
+			    return;
+			  }
+			
+			  const dx = pointer.x - this.touchLastX;
+			  const dy = pointer.y - this.touchLastY;
+			
+			  // 다음 이동 계산을 위해 현재 위치를 저장
+			  this.touchLastX = pointer.x;
+			  this.touchLastY = pointer.y;
+			
+			  const moveX = dx * GameConfig.TOUCH_MOVE_SCALE;
+			  const moveY = dy * GameConfig.TOUCH_MOVE_SCALE;
+			
+			  // 플레이어 이미지 크기를 고려해 화면 안으로 제한
+			  const halfWidth = this.player.displayWidth / 2;
+			  const halfHeight = this.player.displayHeight / 2;
+			
+			  const nextX = Phaser.Math.Clamp(
+			    this.player.x + moveX,
+			    halfWidth,
+			    GameConfig.WIDTH - halfWidth
+			  );
+			
+			  const nextY = Phaser.Math.Clamp(
+			    this.player.y + moveY,
+			    halfHeight,
+			    GameConfig.HEIGHT - halfHeight
+			  );
+			
+			  this.player.setPosition(nextX, nextY);
+			  this.player.body.setVelocity(0, 0);
+			  this.player.body.updateFromGameObject();
+			
+			  // 좌우 이동 방향에 맞춰 함선 포즈 변경
+			  if (dx < -0.1) {
+			    this.player.setFrame(10);
+			  } else if (dx > 0.1) {
+			    this.player.setFrame(12);
+			  } else {
+			    this.player.setFrame(11);
+			  }
+			});
+			
+			// 터치 종료
+			this.input.on('pointerup', (pointer) => {
+			  if (pointer.id === this.touchPointerId) {
+			    this.cancelTouchControl();
+			  }
+			});
+		    
 		    
 		    // 플레이어 발사체 그룹 생성 (여러 발사체를 한 번에 관리)
 		    this.playerBullets = this.physics.add.group();
@@ -389,6 +491,7 @@ class GameScene extends Phaser.Scene {
 		  }
 		
 	      // 플레이어 이동
+	      /*
 	      // 가상 조이스틱 입력을 실제 이동 속도로 변환
 		  handleTouchMovement() {
 		    const speed = GameConfig.PLAYER_SPEED;
@@ -423,6 +526,24 @@ class GameScene extends Phaser.Scene {
 		      this.joystickKnob = null;
 		    }
 		  }
+		  */
+		  // 상대 이동형 터치는 pointermove에서 이미 위치를 직접 갱신한다.
+		  handleTouchMovement() {
+		    this.player.body.setVelocity(0, 0);
+		  }
+		
+		  // 터치 상태 정리
+		  cancelTouchControl() {
+		    this.isTouchActive = false;
+		    this.touchPointerId = null;
+		    this.touchLastX = 0;
+		    this.touchLastY = 0;
+		
+	  	    this.player.body.setVelocity(0, 0);
+		    this.player.setFrame(11);
+		  }
+		  
+		  
 		  
 		   // 플레이어 자동 공격
 		   firePlayerBullet() {

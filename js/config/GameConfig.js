@@ -8,19 +8,22 @@ const GameConfig = {
   BACKGROUND_COLOR: '#000000',
 
   PLAYER_SPEED: 300,          // 플레이어 초당 이동 속도 (px/sec)
-  TOUCH_DEAD_ZONE: 4,         // 터치 목표 지점과 이 거리(px) 이내면 정지 (떨림 방지)
+  TOUCH_MOVE_SCALE: 1.0,      // 터치 이동 배율: 1.0 = 손가락 이동량 그대로
+  //TOUCH_DEAD_ZONE: 4,         // 터치 목표 지점과 이 거리(px) 이내면 정지 (떨림 방지)
   PLAYER_FIRE_RATE: 250,     // 플레이어 발사 간격 (ms) - 0.25초마다 발사
   PLAYER_BULLET_SPEED: 500,   // 플레이어 발사체 속도 (px/sec)
   PLAYER_BULLET_SIZE: 8,      // 발사체 크기 (지름/한변)
   PLAYER_MAX_HP: 5,          // 플레이어 체력
   PLAYER_ATTACK_POWER: 2,      // 플레이어 공격력
   
+  /*
   JOYSTICK_RADIUS: 50,          // 조이스틱 베이스(바깥 원)의 반지름
-  JOYSTICK_DEAD_ZONE: 6,        // 이 거리 이내로만 움직이면 무시 (미세 떨림 방지)
+  JOYSTICK_DEAD_ZONE: 25,        // 이 거리 이내로만 움직이면 무시 (미세 떨림 방지)
   JOYSTICK_BASE_COLOR: 0xffffff,
   JOYSTICK_BASE_ALPHA: 0.25,
   JOYSTICK_KNOB_COLOR: 0x708090,
   JOYSTICK_KNOB_ALPHA: 0.6,
+  */
   
   DOUBLE_TAP_WINDOW: 300,       // 이 시간(ms) 이내에 다시 터치하면 더블 탭으로 인식 → 일시정지/재개
   
@@ -149,8 +152,8 @@ GameConfig.TEXT_FADE_IN = 300;             // 안내 문구가 나타나는 시�
 GameConfig.TEXT_HOLD = 1500;               // 안내 문구가 유지되는 시간 (ms)
 GameConfig.TEXT_FADE_OUT = 1000;           // 안내 문구가 사라지는 시간 (ms)
 
-GameConfig.WAVE_CLEAR_WAIT = 5000;         // 웨이브의 모든 적이 사라진 후, 다음 웨이브 문구가 뜨기까지 대기 시간
-GameConfig.SPAWN_DELAY_AFTER_TEXT = 3000;  // 안내 문구가 사라진 후, 적 생성이 시작되기까지 대기 시간
+GameConfig.WAVE_CLEAR_WAIT = 4000;         // 웨이브의 모든 적이 사라진 후, 다음 웨이브 문구가 뜨기까지 대기 시간
+GameConfig.SPAWN_DELAY_AFTER_TEXT = 1000;  // 안내 문구가 사라진 후, 적 생성이 시작되기까지 대기 시간
 GameConfig.SCREEN_FADE_DURATION = 3000;     // 스테이지 전환 시 화면 전체 페이드 시간
 
 // 스테이지1~3, 각 3웨이브 구성 (누적 방식: 이전 웨이브의 적 종류를 유지하며 새 종류 추가)
