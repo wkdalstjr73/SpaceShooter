@@ -90,7 +90,7 @@ class GameScene extends Phaser.Scene {
 				0x4a90d9						// color - 플레이어 색상
 			);
 			*/
-			this.playerTargetY = GameConfig.HEIGHT - 150;
+			this.playerTargetY = GameConfig.HEIGHT - 300;
 			
 			// 화면 아래쪽 바깥에서 시작
 			this.player = this.physics.add.sprite(
@@ -1092,6 +1092,9 @@ class GameScene extends Phaser.Scene {
 		    if (this.bossCoordEvent) {
 		      this.bossCoordEvent.remove(false);
 		    }
+		    
+		    this.clearEnemyBullets(); // 보스가 남긴 발사체에 억울하게 맞지 않도록 즉시 전부 제거
+		    this.clearMarkers();      // 진행 중이던 표적(좌표) 공격도 함께 정리
 		
 		    this.spawnBurstEffect(this.boss.x, this.boss.y, 0xffffff, 60, 700);
 		
@@ -1150,6 +1153,9 @@ class GameScene extends Phaser.Scene {
 		    this.isInfiniteStage = true;
 		    this.infiniteStartTime = this.time.now;
 		    this.infinitePlayTime = 0;
+		    
+		    this.playerHP = GameConfig.PLAYER_MAX_HP; // 무한모드 진입 시 체력 전체 회복
+		    this.updateHUD();
 
 		    this.activeEnemyTypes = [
 		      GameConfig.ENEMY_TYPES.TYPE1,
@@ -2096,6 +2102,16 @@ class GameScene extends Phaser.Scene {
 		      marker.x = this.player.x;
 		      marker.y = this.player.y;
 		    });
+		  }
+		  
+  		  // 진행 중이던 모든 표식(따라다니는 중이든, 고정되어 깜빡이는 중이든)을 즉시 전부 제거
+		  clearMarkers() {
+		    this.markers.forEach((marker) => {
+		      if (marker.active) {
+		        marker.destroy();
+		      }
+		    });
+		    this.markers = [];
 		  }
 		
 		  fixMarker(marker) {
