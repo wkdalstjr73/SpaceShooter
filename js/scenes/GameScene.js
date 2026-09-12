@@ -28,6 +28,10 @@ class GameScene extends Phaser.Scene {
 			this.load.audio('sfxPauseToggle', 'assets/sounds/pause.wav');
 			this.load.audio('sfxPlayerHit', 'assets/sounds/playerHit.wav');
 			this.load.audio('sfxHeal', 'assets/sounds/heal.wav');
+			this.load.audio('sfxMarkerWarning', 'assets/sounds/markerWarning.wav');
+			this.load.audio('sfxMarkerHit', 'assets/sounds/markerHit.wav');
+			this.load.audio('sfxLaserWarning', 'assets/sounds/laserWarning.wav');
+			this.load.audio('sfxLaserFire', 'assets/sounds/laserFire.wav');
 		  }
 	
 		  // 상태 초기화
@@ -1730,6 +1734,8 @@ class GameScene extends Phaser.Scene {
 		    enemy.warningWidth = warningWidth;
 		    enemy.laserOffsetX = offsetX;	// 매 프레임 위치 갱신(sync)에서도 쓰기 위해 미리 저장
 		    enemy.laserOffsetY = offsetY;
+		    
+		    this.sound.play('sfxLaserWarning', { volume: 0.7 });
 		
 		    // 0.1초 간격으로 보임/안보임 반복 → 깜빡이는 효과
 		    enemy.laserBlinkEvent = this.time.addEvent({
@@ -1791,6 +1797,8 @@ class GameScene extends Phaser.Scene {
 		    enemy.laserOffsetX = offsetX;	// 매 프레임 위치 갱신에도 같은 오프셋을 쓰기 위해 저장
 		    enemy.laserOffsetY = offsetY;
 		    enemy.laserActive = true;		// 현재 레이저 공격 중임을 표시
+		    
+		    this.sound.play('sfxLaserFire', { volume: 0.2 });
 		
 		    // 레이저 유지 중 일정 간격마다 플레이어와 겹치는지 확인해 데미지
 		    enemy.laserTickEvent = this.time.addEvent({
@@ -2120,6 +2128,7 @@ class GameScene extends Phaser.Scene {
 		    }
 		
 		    marker.state = 'fixed';
+		    //this.sound.play('sfxMarkerWarning', { volume: 0.1 });
 		
 		    // 깜빡임 횟수만큼 각각 독립적인 타이머로 예약 (반복 타이머 + 종료 타이머의 경합 문제 방지)
 		    const toggleCount = Math.round(GameConfig.MARKER_BLINK_DURATION / GameConfig.MARKER_BLINK_INTERVAL);
@@ -2159,6 +2168,7 @@ class GameScene extends Phaser.Scene {
 		    const distance = Math.sqrt(dx * dx + dy * dy);	// 두 점 사이의 실제 거리
 		
 		    if (distance <= GameConfig.MARKER_EXPLOSION_RADIUS) {	// 폭발 반경 내에 플레이어가 있다면
+		      this.sound.play('sfxMarkerHit', { volume: 0.3 });
 		      this.damagePlayer(GameConfig.MARKER_DAMAGE);			// 데미지를 줌
 		    }
 		  }
