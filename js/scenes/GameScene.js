@@ -32,6 +32,11 @@ class GameScene extends Phaser.Scene {
 			this.load.audio('sfxMarkerHit', 'assets/sounds/markerHit.wav');
 			this.load.audio('sfxLaserWarning', 'assets/sounds/laserWarning.wav');
 			this.load.audio('sfxLaserFire', 'assets/sounds/laserFire.wav');
+			this.load.audio('bgmBoss', 'assets/sounds/bossBGM.wav');
+			this.load.audio('bgmNormal', 'assets/sounds/firstBGM.wav');
+			this.load.audio('bgmStage1', 'assets/sounds/secondBGM.wav');
+			this.load.audio('bgmStage2', 'assets/sounds/thirdBGM.wav');
+			this.load.audio('bgmStage3', 'assets/sounds/fourthBGM.wav');
 		  }
 	
 		  // 상태 초기화
@@ -75,6 +80,7 @@ class GameScene extends Phaser.Scene {
 		    this.playerAttackPower = GameConfig.PLAYER_ATTACK_POWER;
 	    	this.isGameOver = false;   // 중복으로 게임오버 처리되는 것 방지용 플래그
 		    this.hasBeatenBoss = false;   // 보스를 이겼는지 여부 (사망 시 어느 화면으로 갈지 결정)
+		    this.currentBGM = null;   // 현재 재생 중인 배경음악 (크로스페이드 대상 추적용)
 		    this.isInfiniteStage = false; // 무한 스테이지 진행 중인지
 		    this.infinitePlayTime = 0;
 		    this.gameStartTime = this.time.now; // 생존시간 계산용 게임 시작 시각
@@ -722,6 +728,8 @@ class GameScene extends Phaser.Scene {
 		
   		  handlePlayerDeath() {
 			this.sound.play('sfxPlayerDeath', { volume: 0.8 });
+			this.stopBGM(); // 사망 시 배경음악도 함께 페이드아웃 (게임오버/클리어 화면까지 그대로 이어지지 않도록)
+	
 	
 		    // scene의 남은 모든 타이머 정리 (적 생성, 발사, 표식 등이 페이드아웃 중에 계속 동작하지 않도록)
 		    this.time.removeAllEvents();
@@ -850,7 +858,7 @@ class GameScene extends Phaser.Scene {
 		  // ===== 보스전 (스테이지4) =====
 		  startBossFight() {
 		    this.spawningEnabled = false; // 일반 잡몹은 등장하지 않음 (보스전 전용)
-		    this.sound.play('sfxBossEntry', { volume: 1 });
+		    this.sound.play('sfxBossEntry', { volume: 10 });
 		    this.spawnBoss();
 		  }
 		
@@ -899,6 +907,8 @@ class GameScene extends Phaser.Scene {
 		        this.boss.body.setVelocity(0, 0);
 		        this.boss.isVisible = true;
 		        this.boss.state = 'moving';
+		        
+		        this.playBGM(GameConfig.BGM.tracks.boss, GameConfig.BGM.bossVolume); // 등장 연출이 끝난 시점부터 보스 BGM 시작
 		
 		        this.pickNewBossMoveTarget();
 		        this.startBossAttackLoop();
@@ -1468,6 +1478,12 @@ class GameScene extends Phaser.Scene {
 		      }
 		
 		      this.updateHUD();
+		      
+		       // 스테이지1~3 전환이면 해당 BGM 재생 (스테이지4=보스는 등장 연출 완료 후 별도 재생)
+		      const nextStageNumber = this.currentStageIndex + 1;
+		      if (nextStageNumber >= 1 && nextStageNumber <= 3) {
+		        this.playBGM(GameConfig.BGM.tracks['stage' + nextStageNumber], GameConfig.BGM.stageVolume);
+		      }
 		
 		      // 다음 스테이지 번호 문구를 미리 만들어두고, 화면 페이드인과 동시에 등장시킴
 		      // 스테이지 번호 표시
@@ -1521,6 +1537,11 @@ class GameScene extends Phaser.Scene {
 		  showStageAnnouncement(stageNumber, onComplete) {
 		    const centerX = GameConfig.WIDTH / 2;
 		    const centerY = GameConfig.HEIGHT / 2;
+		    
+		    // 스테이지1~3 문구가 뜨는 시점에 해당 스테이지 BGM 재생 (스테이지4=보스는 등장 연출 완료 후 별도 재생)
+		    if (stageNumber >= 1 && stageNumber <= 3) {
+		      this.playBGM(GameConfig.BGM.tracks['stage' + stageNumber], GameConfig.BGM.stageVolume);
+		    }
 		
 		    const announceText = this.add.text(centerX, centerY, 'STAGE ' + stageNumber, {
 		      fontSize: '56px',
@@ -1708,6 +1729,57 @@ class GameScene extends Phaser.Scene {
 		      bullet.rotation = newAngle + Math.PI / 2; // 방향이 바뀔 때마다 이미지도 같이 회전
 		    });
 		  }
+		  
+		  // 배경음악을 크로스페이드로 전환 (기존 곡은 서서히 사라지고 새 곡이 서서히 커짐)
+		  playBGM(key, targetVolume) {
+		    if (!key) {
+		      return;
+		    }
+
+		    // 이미 같은 곡이 재생 중이면 다시 시작하지 않음
+		    if (this.currentBGM && this.currentBGM.key === key && this.currentBGM.isPlaying) {
+		      return;
+		    }
+
+		    const fadeDuration = GameConfig.BGM.fadeDuration;
+		    const oldBGM = this.currentBGM;
+
+		    const newBGM = this.sound.add(key, { loop: true, volume: 0 });
+		    newBGM.play();
+		    this.currentBGM = newBGM;
+
+		    this.tweens.add({
+		      targets: newBGM,
+		      volume: targetVolume,
+		      duration: fadeDuration
+		    });
+
+		    if (oldBGM) {
+		      this.tweens.add({
+		        targets: oldBGM,
+		        volume: 0,
+		        duration: fadeDuration,
+		        onComplete: () => oldBGM.stop()
+		      });
+		    }
+		  }
+
+		  // 현재 BGM을 서서히 끄기 (사망 시 등에 사용)
+		  stopBGM() {
+		    if (!this.currentBGM) {
+		      return;
+		    }
+
+		    const bgm = this.currentBGM;
+		    this.currentBGM = null;
+
+		    this.tweens.add({
+		      targets: bgm,
+		      volume: 0,
+		      duration: GameConfig.BGM.fadeDuration,
+		      onComplete: () => bgm.stop()
+		    });
+		  }s
 		  
 		  startLaserCycle(enemy, type) {
 		    if (!enemy.active) {

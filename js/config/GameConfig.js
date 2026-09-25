@@ -283,3 +283,16 @@ GameConfig.HEART = {
   fontSize: 35,            // 하트 이모지 크기
   color: 0xff2222        // 하트 색상 (빨간색)
 };
+
+// ===== 배경음악(BGM) 설정 =====
+GameConfig.BGM = {
+  fadeDuration: 1200,   // 크로스페이드(전환) 시간 (ms)
+  stageVolume: 0.2,
+  bossVolume: 0.3,
+  tracks: {
+    stage1: 'bgmStage1',
+    stage2: 'bgmStage2',
+    stage3: 'bgmStage3',
+    boss: 'bgmBoss'
+  }
+};

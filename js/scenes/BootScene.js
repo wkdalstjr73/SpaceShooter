@@ -10,6 +10,8 @@ class BootScene extends Phaser.Scene {
 		      frameWidth: 128,
 		      frameHeight: 256
 		    });
+		    
+		    this.load.audio('startBGM', 'assets/sounds/playerEntry.wav');
 		  }
 	
 		  create() {
