@@ -16,13 +16,14 @@ Phaser 3를 활용하여 개발한 세로형 탄막 슈팅 게임입니다.
 
 ## 2. 개발 환경
 
-|      구분        |            사용 기술             
-| Language        | HTML, CSS, JavaScript         
-| Framework       | Phaser 3.80.1                 
-| Physics         | Arcade Physics                
-| IDE             | Eclipse 
-| Version Control | Git, GitHub 
-| AI              | Copilot, Claude
+| 구분 | 사용 기술 |
+|---|---|
+| Language | HTML, CSS, JavaScript |
+| Framework | Phaser 3.80.1 |
+| Physics | Arcade Physics |
+| IDE | Eclipse |
+| Version Control | Git, GitHub |
+| AI | GitHub Copilot, Claude |
 
 
 ## 3. 게임 소개
@@ -33,10 +34,11 @@ Phaser 3를 활용하여 개발한 세로형 탄막 슈팅 게임입니다.
 
 ### 조작 방법
 
-|                조작                 | 기능
-| 방향키 또는 마우스커서와 터치             | 플레이어 이동
-| 공격                                | 일정 간격으로 자동 총알 발사
-| 스페이스바 또는 더블 클릭, 터치 화면 더블 탭 | 게임 일시정지
+| 조작 | 기능 |
+|---|---|
+| 방향키 / 마우스 커서 / 화면 터치 | 플레이어 이동 |
+| 자동 공격 | 일정 간격으로 자동 총알 발사 |
+| 스페이스바 / 더블 클릭 / 화면 더블 탭 | 게임 일시정지 |
 
 
 ## 4. 주요 기능
@@ -91,6 +93,7 @@ Phaser 3를 활용하여 개발한 세로형 탄막 슈팅 게임입니다.
 
 ## 6. 프로젝트 구조
 
+```text
 SpaceShooter/
 ├── index.html
 ├── assets/
@@ -98,15 +101,16 @@ SpaceShooter/
 │   └── sounds/
 ├── js/
 │   ├── config/
-|   |   ├── GameConfig.js
+│   │   └── GameConfig.js
 │   ├── scenes/
-|   |   ├── BootScene.js
-│   |   ├── ClearScene.js
-│   |   ├── StartScene.js
-│   |   ├── GameScene.js
-│   |   └── GameOverScene.js
+│   │   ├── BootScene.js
+│   │   ├── ClearScene.js
+│   │   ├── StartScene.js
+│   │   ├── GameScene.js
+│   │   └── GameOverScene.js
 │   └── main.js
 └── README.md
+```
 
 
 ## 7. 개발 중 발생한 문제 및 해결
