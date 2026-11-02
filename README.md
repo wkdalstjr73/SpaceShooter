@@ -79,16 +79,16 @@ Phaser 3를 활용하여 개발한 세로형 탄막 슈팅 게임입니다.
 ## 5. 게임 화면
 
 ### 시작 화면
-![시작 화면](./images/start.png)
+![시작 화면](./images/start.jpg)
 
 ### 게임 플레이
-![게임 플레이](./images/game.png)
+![게임 플레이](./images/gamePlay.jpg)
 
 ### 보스전
-![보스전](./images/boss.png)
+![보스전](./images/boss.jpg)
 
 ### 게임 오버
-![게임 오버](./images/gameover.png)
+![게임 오버](./images/gameover.jpg)
 
 
 ## 6. 프로젝트 구조
