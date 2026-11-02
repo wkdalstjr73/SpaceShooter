@@ -22,8 +22,8 @@ Phaser 3를 활용하여 개발한 세로형 탄막 슈팅 게임입니다.
 | Framework | Phaser 3.80.1 |
 | Physics | Arcade Physics |
 | IDE | Eclipse |
-| Version Control | Git, GitHub |
-| AI | GitHub Copilot, Claude |
+| Version Control | GitHub |
+| AI | Codex, Claude |
 
 
 ## 3. 게임 소개
